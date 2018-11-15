@@ -1,0 +1,28 @@
+defaultEntryPoints = ["http", "https"]
+
+[web]
+address = ":8080"
+  [web.auth.basic]
+  users = ["admin:$apr1$7VfoJY.a$1RD4vUdUJcICKV/Kb6jLE."]
+
+[entryPoints]
+  [entryPoints.http]
+  address = ":80"
+    [entryPoints.http.redirect]
+    entryPoint = "https"
+  [entryPoints.https]
+  address = ":443"
+    [entryPoints.https.tls]
+
+[acme]
+email = "daniel@thehibbs.net"
+storage = "acme.json"
+entryPoint = "https"
+onHostRule = true
+onDemand = false
+#[acme.httpChallenge]
+#entryPoint = "http"
+[acme.dnsChallenge]
+provider = "azure"
+delayBeforeCheck = 0
+

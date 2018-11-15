@@ -1,0 +1,93 @@
+version: '2'  
+services:   
+  # Automatically update containers
+  watchtower:
+    container_name: watchtower
+    restart: always
+    image: v2tec/watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --schedule "0 0 4 * * *" --cleanup
+  # Docker Web Management
+  portainer:
+    container_name: portainer
+    restart: always
+    image: portainer/portainer
+    labels:
+      - traefik.backend=portainer
+      - traefik.frontend.rule=Host:portainer.${DOMAIN_NAME}
+      - traefik.docker.network=proxy
+      - traefik.port=9000
+      - traefik.domain=${DOMAIN_NAME}    
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /containers/portainer:/data
+    ports:
+      - 9000:9000
+    networks:
+      - internal
+      - proxy
+  # Azure ARM vizualizer 
+  armviz:
+    container_name: ArmViz
+    restart: always
+    image: ytechie/armviz:v2
+    labels:
+      - traefik.backend=armviz
+      - traefik.frontend.rule=Host:armviz.${DOMAIN_NAME}
+      - traefik.docker.network=proxy
+      - traefik.port=80
+      - traefik.domain=${DOMAIN_NAME}
+    networks:
+      - proxy
+  # Web Portal
+  organizr:
+    container_name: organizr-dev
+    restart: always
+    image: lsiocommunity/organizr
+    labels:
+      - traefik.backend=organizr
+      - traefik.frontend.rule=Host:portal.${DOMAIN_NAME}
+      - traefik.docker.network=proxy
+      - traefik.port=80
+      - traefik.domain=${DOMAIN_NAME}
+    volumes:
+      - /containers/organizr:/config
+    ports:
+      - 8091:80
+    networks:
+      - internal
+      - proxy
+  # Container Proxy
+  traefik:
+    container_name: traefik-dev
+    image: traefik
+    command: --api --docker --logLevel=ERROR
+    environment:
+      # Auth config for LetsEncrypt DNS challenge
+      - AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
+      - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}
+      - AZURE_SUBSCRIPTION_ID=${AZURE_SUB}
+      - AZURE_TENANT_ID=${AZURE_TENANT}
+      - AZURE_RESOURCE_GROUP=${AZURE_RESOURCE_GROUP}
+    labels:
+      - traefik.backend=traefik
+      - traefik.frontend.rule=Host:monitor.${DOMAIN_NAME}
+      - traefik.docker.network=proxy
+      - traefik.port=8080
+      - traefik.domain=${DOMAIN_NAME}    
+    networks:
+      - proxy
+    ports:
+      - 80:80
+      - 8080:8080
+      - 443:443
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /containers/traefik/traefik.toml:/traefik.toml
+      - /containers/traefik/acme.json:/acme.json          
+networks:
+  proxy:
+    external: true
+  internal:
+    external: false      
