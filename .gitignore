@@ -4,3 +4,4 @@ terraform.tfstate.backup
 azure-ubnt
 ssh_priv
 *.tf
+envVariables.sh
